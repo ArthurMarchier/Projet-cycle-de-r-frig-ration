@@ -360,6 +360,142 @@ def trace2():
     plt.grid(True, alpha=0.3)  # Grille légère
         
 trace2()
-# -
+# +
+#Q2.2
+def COP1bis(P3): #Cette fois P3 est une donnée du problème
+    Tcond=CP.PropsSI('T','P',P3,'Q',1,'CO2')
+    P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    P1=P5sv #On néglige la perte de charge dans les échangeurs
+    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
+    h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
+    h5=h4 #détente isenthalpique
+    qf=h1-h5
 
+    s1=CP.PropsSI('S','P',P1,'T',-3+273.15,'CO2')
+    P2=P3 #on néglige la perte de charges dans l'échangeur
+    s2is=s1
+    h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')
+    wis=h2is-h1
+    w=wis/(1-0.121*(P2/P1))
+    return qf/w
+
+def trace_COP():
+    P3=np.linspace(1e6,1e8,100000)
+    COP_1=COP1bis(P3)
+    COP_2=COP2(P3)
+
+    plt.xlim(2.75e6,2.85e6)
+    plt.ylim(-10000,10000)
+    plt.xscale('log')
+    plt.plot(P3,COP_1,label='COP de la question 1.2')
+    plt.plot(P3,COP_2,label='COP de la question 2.1')
+    plt.xlabel('P (Pa)', fontsize=12)
+    plt.ylabel('COP', fontsize=12)
+    plt.title('COP maximale en fonction de la température ambiante', fontsize=14)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3)
+
+    plt.show()
+
+trace_COP()
+
+
+# +
+#Q3.1
+def iteration_T_cond_bis(Tamb, ecart_min,n_iterations): #cette fois Tamb est une variable de la fonction
+    Tk = 273.15 + Tamb+10
+    p_atm= 101300
+    cp_air = CP.PropsSI('C', 'T', Tk-5, 'P', p_atm, 'Air')
+    cp_co2_liq = CP.PropsSI('CP0MASS', 'T', Tk, 'Q', 0, 'CO2')
+    L_v_co2 = CP.PropsSI('L', 'T', Tk, 'Q', 0, 'CO2')
+    Tk1= Tamb + 273.15 + 5 + ((L_v_co2 + 2*cp_co2_liq)/cp_air)
+    k=0
+    while(k<n_iterations and Tk1-Tk>ecart_min):
+        Tk=Tk1
+        cp_air = CP.PropsSI('C', 'T', Tk-5, 'P', p_atm, 'Air')
+        cp_co2_liq = CP.PropsSI('CP0MASS', 'T', Tk, 'Q', 0, 'CO2')
+        L_v_co2 = CP.PropsSI('L', 'T', Tk, 'Q', 0, 'CO2')
+        Tk1= Tamb + 273.15 + 5 + ((L_v_co2 + 2*cp_co2_liq)/cp_air)
+    p_sat = CP.PropsSI('P', 'T', Tk1, 'Q', 1, 'CO2')
+    return Tk1, p_sat
+
+
+def COP1ter(Tamb):
+    Tcond,P3=iteration_T_cond_bis(Tamb,1e-3,1000)
+    P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    P1=P5sv #On néglige la perte de charge dans les échangeurs
+    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
+    h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
+    h5=h4 #détente isenthalpique
+    qf=h1-h5
+
+    s1=CP.PropsSI('S','P',P1,'T',-3+273.15,'CO2')
+    P2=P3 #on néglige la perte de charges dans l'échangeur
+    s2is=s1
+    h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')
+    wis=h2is-h1
+    w=wis/(1-0.121*(P2/P1))
+    return qf/w
+
+
+def COP2bis(P3,Tamb): #Tamb devient une variable
+    T3=Tamb+5+273.15
+    h1=CP.PropsSI('H','T',-8+273.15,'Q',1,'CO2')
+    h3=CP.PropsSI('H','T',T3,'P',P3,'CO2')
+    h5=h3 #détente isenthalpique
+    qf=h1-h5
+
+    P2=P3 #Pas de perte de charges dans le refroidisseur
+    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    s1=CP.PropsSI('S','T',-8+273.15,'Q',1,'CO2')
+    s2is=s1
+    h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
+    wis=h2is-h1
+    w=wis/(1-0.121*(P2/P1))
+    return qf/w
+
+
+def maximiseur_COPbis(Tamb):
+    dP = 10e5
+    P_opt = 120e5
+    COP_opt = COP2bis(P_opt,Tamb)
+
+    while dP > 1e2:
+        P_test = P_opt + dP
+        COP_test = COP2bis(P_test,Tamb)
+        
+        if COP_test > COP_opt:
+            P_opt = P_test
+            COP_opt = COP_test
+            
+        else:
+            P_test = P_opt - dP
+            COP_test = COP2bis(P_test,Tamb)
+            
+            if COP_test > COP_opt:
+                P_opt = P_test
+                COP_opt = COP_test
+                
+            else: #Cas où aucun des deux côtés n'améliore le COP
+                dP /= 2
+
+    return P_opt
+
+def trace_max_COP()
+    Tamb=[10,20,30,40]
+     P30=maximiseur_COPbis(30+273.15)
+     P40=maximiseur_COPbis(40+273.15)
+     T10,P10=iteration_T_cond_bis(10+273.15,1e-3,1000)
+     T20,P20=iteration_T_cond_bis(20+273.15,1e-3,1000)
+    COP=[COP1ter(10+273.15),COP1ter(20+273.15),COP2bis(P30,30+273.15),COP2bis(P40,40+273.15)]
+
+    plt.plot(Tamb,COP)
+    plt.xlabel('Tamb (°C)', fontsize=12)
+    plt.ylabel('COP maximale', fontsize=12)
+    plt.title(COP maximale en fonction de la température ambiante', fontsize=14)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3)
+    plt.show()
+
+     return P10,P20,P30,P40
 

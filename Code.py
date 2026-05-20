@@ -496,7 +496,10 @@ def trace_max_COP():
     plt.grid(True, alpha=0.3)
     plt.show()
 
-    plt.plot(Tamb,np.array([P10,P20,P30,P40])*1e-5,marker='o')
+    P_bar=np.array([P10,P20,P30,P40])*1e-5
+    plt.plot(Tamb,P_bar,marker='o')
+    for i, (T, P) in enumerate(zip(Tamb, P_bar)):
+        plt.text(T, P, f'{P:.1f} bar', fontsize=10, ha='left', va='bottom', color='red')
     plt.xlabel('Tamb (°C)', fontsize=12)
     plt.ylabel('P3 (bar)', fontsize=12)
     plt.title('P3 en fonction de la température ambiante', fontsize=14)
@@ -510,6 +513,55 @@ print("P10 =",P10*1e-5,'bar')
 print("P20 =",P20*1e-5,'bar')
 print("P30 =",P30*1e-5,'bar')
 print("P40 =",P40*1e-5,'bar')
+
+
+# +
+#Q4.1
+def COP4_souscritique(SC):
+    Tcond,P3=iteration_T_cond(1e-3,1000)
+    P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    P1=P5sv #On néglige la perte de charge dans les échangeurs
+    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
+    h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
+    P4=P3 #On néglige la perte de charge dans les échangeurs
+    P4sc=P4 #On néglige la perte de charge dans les échangeurs
+    T4sc=Tcond-2-SC
+    h4sc=CP.PropsSI('H','T',T4sc,'P',P4sc,'CO2')
+    h5=h4sc #détente isenthalpique
+    qf=h1-h5
+
+    s1=CP.PropsSI('S','P',P1,'T',-3+273.15,'CO2')
+    P2=P3 #on néglige la perte de charges dans l'échangeur
+    s2is=s1
+    h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')
+    wis=h2is-h1
+    tau=P2/P1
+    eta_is=0.3774+0.14*tau-0.02*tau**2+0.001*tau**3
+    w=wis/eta_is
+    return qf/w
+
+def COP4_transcritique(P3,Tamb,SC):
+    T3=Tamb+5
+    P4=P3 #Pas de perte de charge dans les échangeurs
+    T4=T3-SC
+    h4=CP.PropsSI('H','P',P4,'T',T4,'CO2')
+    h5=h4 #détente isenthalpique
+    h1=CP.PropsSI('H','T',-8+273.15,'Q',1,'CO2')
+    qf=h1-h5
+
+    P2=P3 #Pas de perte de charges dans le refroidisseur
+    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    s1=CP.PropsSI('S','T',-8+273.15,'Q',1,'CO2')
+    s2is=s1
+    h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
+    wis=h2is-h1
+    tau=P2/P1
+    eta_is=0.3774+0.14*tau-0.02*tau**2+0.001*tau**3
+    w=wis/eta_is
+    return qf/w
+
+print(COP4_transcritique(120e5,30+273.15,8))
+print(COP2bis(120e5,30+273.15))
 # -
 
 

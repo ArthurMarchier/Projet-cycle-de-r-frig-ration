@@ -517,8 +517,8 @@ print("P40 =",P40*1e-5,'bar')
 
 # +
 #Q4.1
-def COP4_souscritique(SC):
-    Tcond,P3=iteration_T_cond(1e-3,1000)
+def COP4_souscritique(P3,SC):
+    Tcond=CP.PropsSI('T','P',P3,'Q',1,'CO2')
     P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
     P1=P5sv #On néglige la perte de charge dans les échangeurs
     h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
@@ -562,6 +562,46 @@ def COP4_transcritique(P3,Tamb,SC):
 
 print(COP4_transcritique(120e5,30+273.15,8))
 print(COP2bis(120e5,30+273.15))
+# -
+
+
+
+# +
+#Q4.2
+def trace4_transcritique(Tamb):
+    P3=np.linspace(5e5,1e8,10000)
+    COP_avecSC_transcritique=COP4_transcritique(P3,Tamb,5)
+    COP_sansSC_transcritique=COP2bis(P3,Tamb)
+
+    plt.ylim(-50,50)
+    plt.xscale('log')
+    plt.plot(P3,COP_avecSC_transcritique,label='COP avec DMSS')
+    plt.plot(P3,COP_sansSC_transcritique,label='COP sans DMSS')
+    plt.xlabel('P (Pa)', fontsize=12)
+    plt.ylabel('COP', fontsize=12)
+    plt.title('COP en fonction de la pression avec et sans DMSS en régime transcritique', fontsize=14)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3)
+    plt.show()
+
+def trace4_souscritique(Tamb):
+    P3=np.linspace(6e5,7e6,10000)
+    COP_avecSC_souscritique=COP4_souscritique(P3,5)
+    COP_sansSC_souscritique=COP1bis(P3)
+
+    plt.ylim(-50,50)
+    plt.xscale('log')
+    plt.plot(P3,COP_avecSC_souscritique,label='COP avec DMSS')
+    plt.plot(P3,COP_sansSC_souscritique,label='COP sans DMSS')
+    plt.xlabel('P (Pa)', fontsize=12)
+    plt.ylabel('COP', fontsize=12)
+    plt.title('COP en fonction de la pression avec et sans DMSS en régime sous-critique', fontsize=14)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3)
+    plt.show()
+
+trace4_transcritique(30+327.15)
+trace4_souscritique(20+327.15)
 # -
 
 

@@ -602,6 +602,95 @@ def trace4_souscritique(Tamb):
 
 trace4_transcritique(30+327.15)
 trace4_souscritique(20+327.15)
+
+
 # -
+#Q4.3
+def COP4_souscritique_bis(Tamb,SC):
+    Tcond,P3=iteration_T_cond_bis(Tamb,1e-3,1000)
+    P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    P1=P5sv #On néglige la perte de charge dans les échangeurs
+    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
+    P4=P3 #On néglige la perte de charge dans les échangeurs
+    h4=CP.PropsSI('H','T',Tcond-2,'P',P4,'CO2')
+    P4sc=P4 #On néglige la perte de charge dans les échangeurs
+    T4sc=Tcond-2-SC
+    h4sc=CP.PropsSI('H','T',T4sc,'P',P4sc,'CO2')
+    h5=h4sc #détente isenthalpique
+    qf=h1-h5
+
+    s1=CP.PropsSI('S','P',P1,'T',-3+273.15,'CO2')
+    P2=P3 #on néglige la perte de charges dans l'échangeur
+    s2is=s1
+    h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')
+    wis=h2is-h1
+    tau=P2/P1
+    eta_is=0.3774+0.14*tau-0.02*tau**2+0.001*tau**3
+    w=wis/eta_is
+    return qf/w
+# +
+import time
+
+def find_optimal_couple_souscritique(Tamb, SC_range=(0, 20, 50)):
+    start_time = time.time()
+    T_cond,best_P3=iteration_T_cond_bis(Tamb,1e-3,1000)
+    SC_min, SC_max, n_SC = SC_range
+
+    best_COP = -np.inf
+    best_SC = None
+
+    for i in range(5):
+        SC_values = np.linspace(SC_min, SC_max, n_SC)
+        dSC=(SC_max-SC_min)/n_SC
+        for SC in SC_values:
+            current_COP = COP4_souscritique_bis(Tamb,SC)
+            if current_COP > best_COP:
+                best_COP = current_COP
+                best_SC = SC
+                
+        SC_min,SC_max=SC-dSC,SC+dSC
+
+    # Temps écoulé
+    time_elapsed = time.time() - start_time
+
+    return best_P3, best_SC, time_elapsed
+
+
+# -
+def find_optimal_couple_transcritique(Tamb, P3_range=(10e5, 70e5, 50), SC_range=(0, 20, 50)):
+    start_time = time.time()
+
+    P3_min, P3_max, n_P3 = P3_range
+    SC_min, SC_max, n_SC = SC_range
+
+    best_COP = -np.inf
+    best_P3 = None
+    best_SC = None
+
+    for i in range(5):
+        P3_values = np.linspace(P3_min, P3_max, n_P3)
+        SC_values = np.linspace(SC_min, SC_max, n_SC)
+        dP3=(P3_max-P3_min)/n_P3
+        dSC=(SC_max-SC_min)/n_SC
+        for P3 in P3_values:
+            for SC in SC_values:
+                current_COP = COP4_transcritique(P3,Tamb,SC)
+                if current_COP > best_COP:
+                    best_COP = current_COP
+                    best_P3 = P3
+                    best_SC = SC
+        P3_min, P3_max = P3-dP3,P3+dP3
+        SC_min,SC_max=SC-dSC,SC+dSC
+
+    # Temps écoulé
+    time_elapsed = time.time() - start_time
+
+    return best_P3, best_SC, time_elapsed
+
+
+print(find_optimal_couple_souscritique(283.15, SC_range=(0, 15, 50)))
+print(find_optimal_couple_souscritique(293.15, SC_range=(0, 15, 50)))
+print(find_optimal_couple_transcritique(303.15, P3_range=(10e5, 70e5, 50), SC_range=(0, 15, 50)))
+print(find_optimal_couple_transcritique(313.15, P3_range=(10e5, 70e5, 50), SC_range=(0, 15, 50)))
 
 

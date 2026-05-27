@@ -228,8 +228,8 @@ print(COP2(120e5))
 
 # +
 def maximiseur_COP():
-    dP = 10e5
-    P_opt = 120e5
+    dP = 1e5
+    P_opt = 10e5
     COP_opt = COP2(P_opt)
 
     while dP > 1e2:
@@ -681,7 +681,7 @@ def find_optimal_couple_transcritique(Tamb, P3_range=(10e5, 70e5, 50), SC_range=
                     best_SC = SC
         P3_min, P3_max = P3-dP3,P3+dP3
         SC_min,SC_max=SC-dSC,SC+dSC
-
+        
     # Temps écoulé
     time_elapsed = time.time() - start_time
 
@@ -692,5 +692,39 @@ print(find_optimal_couple_souscritique(283.15, SC_range=(0, 15, 50)))
 print(find_optimal_couple_souscritique(293.15, SC_range=(0, 15, 50)))
 print(find_optimal_couple_transcritique(303.15, P3_range=(10e5, 70e5, 50), SC_range=(0, 15, 50)))
 print(find_optimal_couple_transcritique(313.15, P3_range=(10e5, 70e5, 50), SC_range=(0, 15, 50)))
+
+
+# +
+#Q5
+def calcul_qf_souscritique_avec_DMSS(Tamb, SC_range=(0, 20, 50)):
+    P3,SC,t=find_optimal_couple_transcritique(Tamb, P3_range=(10e5, 70e5, 50), SC_range=(0, 20, 50))
+    Tcond=CP.PropsSI('T','P',P3,'Q',1,'CO2')
+    P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    P1=P5sv #On néglige la perte de charge dans les échangeurs
+    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
+    P4=P3 #On néglige la perte de charge dans les échangeurs
+    h4=CP.PropsSI('H','T',Tcond-2,'P',P4,'CO2')
+    P4sc=P4 #On néglige la perte de charge dans les échangeurs
+    T4sc=Tcond-2-SC
+    h4sc=CP.PropsSI('H','T',T4sc,'P',P4sc,'CO2')
+    h5=h4sc #détente isenthalpique
+    qf=h1-h5
+    return qf
+
+def calcul_qf_souscritique_sans_DMSS(Tamb):
+    Tcond,P3=iteration_T_cond_bis(Tamb,1e-3,1000)
+    P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    P1=P5sv #On néglige la perte de charge dans les échangeurs
+    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
+    h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
+    h5=h4 #détente isenthalpique
+    qf=h1-h5
+    return qf
+
+print(calcul_qf_souscritique_avec_DMSS(283.15, SC_range=(0, 20, 50)))
+print(calcul_qf_souscritique_avec_DMSS(293.15, SC_range=(0, 20, 50)))
+print(calcul_qf_souscritique_sans_DMSS(283.15))
+print(calcul_qf_souscritique_sans_DMSS(293.15))
+# -
 
 

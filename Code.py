@@ -414,26 +414,27 @@ def iteration_T_cond_bis(Tamb, ecart_min,n_iterations): #cette fois Tamb est une
     L_v_co2 = CP.PropsSI('L', 'T', Tk, 'Q', 0, 'CO2')
     Tk1= Tamb + 5 + ((L_v_co2 + 2*cp_co2_liq)/cp_air)
     k=0
-    while(k<n_iterations and Tk1-Tk>ecart_min):
+    while(k<n_iterations and abs(Tk1-Tk)>ecart_min):
         Tk=Tk1
         cp_air = CP.PropsSI('C', 'T', Tk-5, 'P', p_atm, 'Air')
         cp_co2_liq = CP.PropsSI('CP0MASS', 'T', Tk, 'Q', 0, 'CO2')
         L_v_co2 = CP.PropsSI('L', 'T', Tk, 'Q', 0, 'CO2')
-        Tk1= Tamb + 273.15 + 5 + ((L_v_co2 + 2*cp_co2_liq)/cp_air)
+        Tk1= Tamb + 5 + ((L_v_co2 + 2*cp_co2_liq)/cp_air)
+        k += 1
     p_sat = CP.PropsSI('P', 'T', Tk1, 'Q', 1, 'CO2')
     return Tk1, p_sat
 
-
+ 
 def COP1ter(Tamb):
     Tcond,P3=iteration_T_cond_bis(Tamb,1e-3,1000)
     P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
     P1=P5sv #On néglige la perte de charge dans les échangeurs
-    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
+    h1=CP.PropsSI('H','P',P1,'T',-8+273.15+5,'CO2')
     h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
     h5=h4 #détente isenthalpique
     qf=h1-h5
 
-    s1=CP.PropsSI('S','P',P1,'T',-3+273.15,'CO2')
+    s1=CP.PropsSI('S','P',P1,'T',-8+273.15+5,'CO2')
     P2=P3 #on néglige la perte de charges dans l'échangeur
     s2is=s1
     h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')
@@ -444,14 +445,13 @@ def COP1ter(Tamb):
 
 def COP2bis(P3,Tamb): #Tamb devient une variable
     T3=Tamb+5
-    h1=CP.PropsSI('H','T',-8+273.15,'Q',1,'CO2')
+    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    h1=CP.PropsSI('H','T',-8+273.15+5,'P',P1,'CO2')
+    s1=CP.PropsSI('S','T',-8+273.15+5,'P',P1,'CO2')
     h3=CP.PropsSI('H','T',T3,'P',P3,'CO2')
     h5=h3 #détente isenthalpique
     qf=h1-h5
-
-    P2=P3 #Pas de perte de charges dans le refroidisseur
-    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
-    s1=CP.PropsSI('S','T',-8+273.15,'Q',1,'CO2')
+    P2=P3
     s2is=s1
     h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
     wis=h2is-h1
@@ -465,7 +465,9 @@ def maximiseur_COPbis(Tamb):
     COP_opt = COP2bis(P_opt,Tamb)
 
     while dP > 1e2:
-        P_test = P_opt + dP
+        P_test = P_opt - dP
+        if P_test < 70e5:   #limite basse
+            P_test = 70e5
         COP_test = COP2bis(P_test,Tamb)
         
         if COP_test > COP_opt:
@@ -473,7 +475,7 @@ def maximiseur_COPbis(Tamb):
             COP_opt = COP_test
             
         else:
-            P_test = P_opt - dP
+            P_test = P_opt + dP
             COP_test = COP2bis(P_test,Tamb)
             
             if COP_test > COP_opt:
@@ -492,7 +494,7 @@ def trace_max_COP():
     T20,P20=iteration_T_cond_bis(20+273.15,1e-3,1000)
     COP=[COP1ter(10+273.15),COP1ter(20+273.15),COP2bis(P30,30+273.15),COP2bis(P40,40+273.15)]
 
-    plt.plot(Tamb,COP,marker='o')
+    plt.plot(Tamb,COP,marker='o', label='COP max')
     plt.xlabel('Tamb (°C)', fontsize=12)
     plt.ylabel('COP maximale', fontsize=12)
     plt.title('COP maximale en fonction de la température ambiante', fontsize=14)
@@ -501,7 +503,7 @@ def trace_max_COP():
     plt.show()
 
     P_bar=np.array([P10,P20,P30,P40])*1e-5
-    plt.plot(Tamb,P_bar,marker='o')
+    plt.plot(Tamb,P_bar,marker='o', label='P3 optimale')
     for i, (T, P) in enumerate(zip(Tamb, P_bar)):
         plt.text(T, P, f'{P:.1f} bar', fontsize=10, ha='left', va='bottom', color='red')
     plt.xlabel('Tamb (°C)', fontsize=12)

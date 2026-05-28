@@ -222,7 +222,7 @@ def COP2(P3):
     h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
     wis=h2is-h1
     w=wis/(1-0.121*(P2/P1))
-    return qf/w
+    return qf/w 
     
 print(COP2(120e5))
 
@@ -544,12 +544,13 @@ def COP4_souscritique(P3,SC):
     tau=P2/P1
     eta_is=0.3774+0.14*tau-0.02*tau**2+0.001*tau**3
     w=wis/eta_is
-    return qf/w
+    return qf/(w+h4sc-h4) #On ajoute le travail fourni au propane, transmis au CO2 par transfert thermique
 
 def COP4_transcritique(P3,Tamb,SC):
     T3=Tamb+5
     P4=P3 #Pas de perte de charge dans les échangeurs
     T4=T3-SC
+    h3=CP.PropsSI('H','P',P3,'T',T3,'CO2')
     h4=CP.PropsSI('H','P',P4,'T',T4,'CO2')
     h5=h4 #détente isenthalpique
     h1=CP.PropsSI('H','T',-8+273.15,'Q',1,'CO2')
@@ -564,7 +565,7 @@ def COP4_transcritique(P3,Tamb,SC):
     tau=P2/P1
     eta_is=0.3774+0.14*tau-0.02*tau**2+0.001*tau**3
     w=wis/eta_is
-    return qf/w
+    return qf/(w+h4-h3) #On ajoute le travail fourni au propane, transmis au CO2 par transfert thermique
 
 print(COP4_transcritique(120e5,30+273.15,8))
 print(COP2bis(120e5,30+273.15))
@@ -703,7 +704,7 @@ print(find_optimal_couple_transcritique(313.15, P3_range=(10e5, 70e5, 50), SC_ra
 # +
 #Q5
 def calcul_qf_souscritique_avec_DMSS(Tamb, SC_range=(0, 20, 50)):
-    P3,SC,t=find_optimal_couple_transcritique(Tamb, P3_range=(10e5, 70e5, 50), SC_range=(0, 20, 50))
+    P3,SC,t=find_optimal_couple_souscritique(Tamb, P3_range=(10e5, 70e5, 50), SC_range=(0, 20, 50))
     Tcond=CP.PropsSI('T','P',P3,'Q',1,'CO2')
     P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
     P1=P5sv #On néglige la perte de charge dans les échangeurs

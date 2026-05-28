@@ -209,14 +209,15 @@ trace1log()
 #Q2.1
 def COP2(P3):
     T3=35+273.15
-    h1=CP.PropsSI('H','T',-8+273.15,'Q',1,'CO2')
+    T1 = -8 + 273.15 + 5
+    P1 = CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    h1 = CP.PropsSI('H','T',T1,'P',P1,'CO2')
+    s1 = CP.PropsSI('S','T',T1,'P',P1,'CO2')
     h3=CP.PropsSI('H','T',T3,'P',P3,'CO2')
     h5=h3 #détente isenthalpique
     qf=h1-h5
 
     P2=P3 #Pas de perte de charges dans le refroidisseur
-    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
-    s1=CP.PropsSI('S','T',-8+273.15,'Q',1,'CO2')
     s2is=s1
     h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
     wis=h2is-h1
@@ -229,7 +230,7 @@ print(COP2(120e5))
 # +
 def maximiseur_COP():
     dP = 1e5
-    P_opt = 10e5
+    P_opt = 90e5
     COP_opt = COP2(P_opt)
 
     while dP > 1e2:
@@ -242,6 +243,8 @@ def maximiseur_COP():
             
         else:
             P_test = P_opt - dP
+            if P_test < 70e5:
+                P_test = 70e5
             COP_test = COP2(P_test)
             
             if COP_test > COP_opt:
@@ -260,14 +263,14 @@ maximiseur_COP()
 def trace2():
     P3=maximiseur_COP()
     T3=35+273.15
-    T1=-8+273.15
-    T5=T1
+    T1=-8+273.15+5
+    T5=-8+273.15
     h3=CP.PropsSI('H','T',T3,'P',P3,'CO2')
     h4=h3 #détente isenthalpique
     #T4=CP.PropsSI('T','H',h4,'Q',0,'CO2') --> nécessaire de connaître P4 pour calculer
 
-    s1=CP.PropsSI('S','T',T1,'Q',1,'CO2')
-    P1=CP.PropsSI('P','T',T1,'Q',1,'CO2')
+    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    s1=CP.PropsSI('S','T',T1,'P',P1,'CO2')
     s3=CP.PropsSI('S','T',T3,'P',P3,'CO2')
     #s4=CP.PropsSI('S','H',h4,'Q',0,'CO2')
     P5=P1 #Pas de perte de charges dans l'échangeur
@@ -278,7 +281,7 @@ def trace2():
     P2=P3 #Pas de perte de charges dans le refroidisseur
     s2is=s1
     h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
-    h1=CP.PropsSI('H','P',P1,'S',s1,'CO2')
+    h1=CP.PropsSI('H','T',T1,'P',P1,'CO2')
     wis=h2is-h1
     w=wis/(1-0.121*(P2/P1))
     h2=h1+w
@@ -305,17 +308,17 @@ trace2()
 
 
 # +
-def trace2():
+def trace2log():
     P3=maximiseur_COP()
     T3=35+273.15
-    T1=-8+273.15
-    T5=T1
+    T1=-8+273.15+5
+    T5=-8+273.15
     h3=CP.PropsSI('H','T',T3,'P',P3,'CO2')
     h4=h3 #détente isenthalpique
     #T4=CP.PropsSI('T','H',h4,'Q',0,'CO2') --> nécessaire de connaître P4 pour calculer
 
-    s1=CP.PropsSI('S','T',T1,'Q',1,'CO2')
-    P1=CP.PropsSI('P','T',T1,'Q',1,'CO2')
+    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    s1=CP.PropsSI('S','T',T1,'P',P1,'CO2')
     s3=CP.PropsSI('S','T',T3,'P',P3,'CO2')
     #s4=CP.PropsSI('S','H',h4,'Q',0,'CO2')
     P5=P1 #Pas de perte de charges dans l'échangeur
@@ -326,7 +329,7 @@ def trace2():
     P2=P3 #Pas de perte de charges dans le refroidisseur
     s2is=s1
     h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
-    h1=CP.PropsSI('H','P',P1,'S',s1,'CO2')
+    h1=CP.PropsSI('H','T',T1,'P',P1,'CO2')
     wis=h2is-h1
     w=wis/(1-0.121*(P2/P1))
     h2=h1+w
@@ -359,42 +362,44 @@ def trace2():
     plt.legend(fontsize=10)  # Affiche la légende "Cycle CO₂"
     plt.grid(True, alpha=0.3)  # Grille légère
         
-trace2()
+trace2log()
 # +
 #Q2.2
 def COP1bis(P3): #Cette fois P3 est une donnée du problème
     Tcond=CP.PropsSI('T','P',P3,'Q',1,'CO2')
     P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
-    P1=P5sv #On néglige la perte de charge dans les échangeurs
-    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
-    h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
-    h5=h4 #détente isenthalpique
-    qf=h1-h5
+    P1=P5sv
+    T1 = -8+273.15+5
+    h1=CP.PropsSI('H','T',T1,'P',P1,'CO2')
+    s1=CP.PropsSI('S','T',T1,'P',P1,'CO2')
 
-    s1=CP.PropsSI('S','P',P1,'T',-3+273.15,'CO2')
-    P2=P3 #on néglige la perte de charges dans l'échangeur
+    h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
+    h5=h4
+    qf=h1-h5
+D
+    P2=P3
     s2is=s1
     h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')
     wis=h2is-h1
     w=wis/(1-0.121*(P2/P1))
     return qf/w
 
-def trace_COP():
-    P3=np.linspace(1e6,1e8,100000)
-    COP_1=COP1bis(P3)
-    COP_2=COP2(P3)
 
-    plt.xlim(2.75e6,2.85e6)
-    plt.ylim(-10000,10000)
-    plt.xscale('log')
-    plt.plot(P3,COP_1,label='COP de la question 1.2')
-    plt.plot(P3,COP_2,label='COP de la question 2.1')
+def trace_COP():
+    P3_1 = np.linspace(4.5e6,7.3e6,100)   # domaine sous-critique
+    P3_2 = np.linspace(7e6,15e6,100)  # domaine transcritique
+
+    COP_1 = [COP1bis(p) for p in P3_1]
+    COP_2 = [COP2(p) for p in P3_2]
+
+    plt.plot(P3_1,COP_1,label='COP de la question 1.2')
+    plt.plot(P3_2,COP_2,label='COP de la question 2.1')
+
     plt.xlabel('P (Pa)', fontsize=12)
     plt.ylabel('COP', fontsize=12)
-    plt.title('COP maximale en fonction de la température ambiante', fontsize=14)
+    plt.title('Evolution du COP en fonction de la pression')
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3)
-
     plt.show()
 
 trace_COP()

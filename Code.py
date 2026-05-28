@@ -9,7 +9,7 @@ def iteration_T_cond(ecart_min,n_iterations):
     Tk = 273.15 + 25
     p_atm= 101300
     cp_air = CP.PropsSI('C', 'T', Tk-5, 'P', p_atm, 'Air')
-    cp_co2_liq = CP.PropsSI('CPMASS', 'T', Tk, 'Q', 0, 'CO2')
+    cp_co2_liq = CP.PropsSI('CP0MASS', 'T', Tk, 'Q', 0, 'CO2')
     L_v_co2 = CP.PropsSI('L', 'T', Tk, 'Q', 0, 'CO2')
     Tk1= 15 + 273.15 + 5 + ((L_v_co2 + 2*cp_co2_liq)/cp_air)
     k=0

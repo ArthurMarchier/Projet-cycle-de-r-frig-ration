@@ -368,15 +368,14 @@ trace2log()
 def COP1bis(P3): #Cette fois P3 est une donnée du problème
     Tcond=CP.PropsSI('T','P',P3,'Q',1,'CO2')
     P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
-    P1=P5sv
+    P1=P5sv #On néglige la perte de charge dans les échangeurs
     T1 = -8+273.15+5
     h1=CP.PropsSI('H','T',T1,'P',P1,'CO2')
     s1=CP.PropsSI('S','T',T1,'P',P1,'CO2')
 
     h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
-    h5=h4
+    h5=h4 #détente isenthalpique
     qf=h1-h5
-D
     P2=P3
     s2is=s1
     h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')

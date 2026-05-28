@@ -13,7 +13,7 @@ def iteration_T_cond(ecart_min,n_iterations):
     L_v_co2 = CP.PropsSI('L', 'T', Tk, 'Q', 0, 'CO2')
     Tk1= 15 + 273.15 + 5 + ((L_v_co2 + 2*cp_co2_liq)/cp_air)
     k=0
-    while(k<n_iterations and Tk1-Tk>ecart_min):
+    while(k < n_iterations and abs(Tk1 - Tk) > ecart_min):
         Tk=Tk1
         cp_air = CP.PropsSI('C', 'T', Tk-5, 'P', p_atm, 'Air')
         cp_co2_liq = CP.PropsSI('CP0MASS', 'T', Tk, 'Q', 0, 'CO2')
@@ -209,14 +209,15 @@ trace1log()
 #Q2.1
 def COP2(P3):
     T3=35+273.15
-    h1=CP.PropsSI('H','T',-8+273.15,'Q',1,'CO2')
+    T1 = -8 + 273.15 + 5
+    P1 = CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    h1 = CP.PropsSI('H','T',T1,'P',P1,'CO2')
+    s1 = CP.PropsSI('S','T',T1,'P',P1,'CO2')
     h3=CP.PropsSI('H','T',T3,'P',P3,'CO2')
     h5=h3 #détente isenthalpique
     qf=h1-h5
-
+    
     P2=P3 #Pas de perte de charges dans le refroidisseur
-    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
-    s1=CP.PropsSI('S','T',-8+273.15,'Q',1,'CO2')
     s2is=s1
     h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
     wis=h2is-h1
@@ -229,7 +230,7 @@ print(COP2(120e5))
 # +
 def maximiseur_COP():
     dP = 1e5
-    P_opt = 10e5
+    P_opt = 90e5
     COP_opt = COP2(P_opt)
 
     while dP > 1e2:
@@ -242,6 +243,8 @@ def maximiseur_COP():
             
         else:
             P_test = P_opt - dP
+            if P_test < 70e5:
+                P_test = 70e5
             COP_test = COP2(P_test)
             
             if COP_test > COP_opt:
@@ -260,14 +263,14 @@ maximiseur_COP()
 def trace2():
     P3=maximiseur_COP()
     T3=35+273.15
-    T1=-8+273.15
-    T5=T1
+    T1=-8+273.15+5
+    T5=-8+273.15
     h3=CP.PropsSI('H','T',T3,'P',P3,'CO2')
     h4=h3 #détente isenthalpique
     #T4=CP.PropsSI('T','H',h4,'Q',0,'CO2') --> nécessaire de connaître P4 pour calculer
 
-    s1=CP.PropsSI('S','T',T1,'Q',1,'CO2')
-    P1=CP.PropsSI('P','T',T1,'Q',1,'CO2')
+    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    s1=CP.PropsSI('S','T',T1,'P',P1,'CO2')
     s3=CP.PropsSI('S','T',T3,'P',P3,'CO2')
     #s4=CP.PropsSI('S','H',h4,'Q',0,'CO2')
     P5=P1 #Pas de perte de charges dans l'échangeur
@@ -278,7 +281,7 @@ def trace2():
     P2=P3 #Pas de perte de charges dans le refroidisseur
     s2is=s1
     h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
-    h1=CP.PropsSI('H','P',P1,'S',s1,'CO2')
+    h1=CP.PropsSI('H','T',T1,'P',P1,'CO2')
     wis=h2is-h1
     w=wis/(1-0.121*(P2/P1))
     h2=h1+w
@@ -305,17 +308,17 @@ trace2()
 
 
 # +
-def trace2():
+def trace2log():
     P3=maximiseur_COP()
     T3=35+273.15
-    T1=-8+273.15
-    T5=T1
+    T1=-8+273.15+5
+    T5=-8+273.15
     h3=CP.PropsSI('H','T',T3,'P',P3,'CO2')
     h4=h3 #détente isenthalpique
     #T4=CP.PropsSI('T','H',h4,'Q',0,'CO2') --> nécessaire de connaître P4 pour calculer
 
-    s1=CP.PropsSI('S','T',T1,'Q',1,'CO2')
-    P1=CP.PropsSI('P','T',T1,'Q',1,'CO2')
+    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    s1=CP.PropsSI('S','T',T1,'P',P1,'CO2')
     s3=CP.PropsSI('S','T',T3,'P',P3,'CO2')
     #s4=CP.PropsSI('S','H',h4,'Q',0,'CO2')
     P5=P1 #Pas de perte de charges dans l'échangeur
@@ -326,7 +329,7 @@ def trace2():
     P2=P3 #Pas de perte de charges dans le refroidisseur
     s2is=s1
     h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
-    h1=CP.PropsSI('H','P',P1,'S',s1,'CO2')
+    h1=CP.PropsSI('H','T',T1,'P',P1,'CO2')
     wis=h2is-h1
     w=wis/(1-0.121*(P2/P1))
     h2=h1+w
@@ -359,42 +362,43 @@ def trace2():
     plt.legend(fontsize=10)  # Affiche la légende "Cycle CO₂"
     plt.grid(True, alpha=0.3)  # Grille légère
         
-trace2()
+trace2log()
 # +
 #Q2.2
 def COP1bis(P3): #Cette fois P3 est une donnée du problème
     Tcond=CP.PropsSI('T','P',P3,'Q',1,'CO2')
     P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
     P1=P5sv #On néglige la perte de charge dans les échangeurs
-    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
+    T1 = -8+273.15+5
+    h1=CP.PropsSI('H','T',T1,'P',P1,'CO2')
+    s1=CP.PropsSI('S','T',T1,'P',P1,'CO2')
+
     h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
     h5=h4 #détente isenthalpique
     qf=h1-h5
-
-    s1=CP.PropsSI('S','P',P1,'T',-3+273.15,'CO2')
-    P2=P3 #on néglige la perte de charges dans l'échangeur
+    P2=P3
     s2is=s1
     h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')
     wis=h2is-h1
     w=wis/(1-0.121*(P2/P1))
     return qf/w
 
-def trace_COP():
-    P3=np.linspace(1e6,1e8,100000)
-    COP_1=COP1bis(P3)
-    COP_2=COP2(P3)
 
-    plt.xlim(2.75e6,2.85e6)
-    plt.ylim(-10000,10000)
-    plt.xscale('log')
-    plt.plot(P3,COP_1,label='COP de la question 1.2')
-    plt.plot(P3,COP_2,label='COP de la question 2.1')
+def trace_COP():
+    P3_1 = np.linspace(4.5e6,7.3e6,100)   # domaine sous-critique
+    P3_2 = np.linspace(7e6,15e6,100)  # domaine transcritique
+
+    COP_1 = [COP1bis(p) for p in P3_1]
+    COP_2 = [COP2(p) for p in P3_2]
+
+    plt.plot(P3_1,COP_1,label='COP de la question 1.2')
+    plt.plot(P3_2,COP_2,label='COP de la question 2.1')
+
     plt.xlabel('P (Pa)', fontsize=12)
     plt.ylabel('COP', fontsize=12)
-    plt.title('COP maximale en fonction de la température ambiante', fontsize=14)
+    plt.title('Evolution du COP en fonction de la pression')
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3)
-
     plt.show()
 
 trace_COP()
@@ -410,26 +414,27 @@ def iteration_T_cond_bis(Tamb, ecart_min,n_iterations): #cette fois Tamb est une
     L_v_co2 = CP.PropsSI('L', 'T', Tk, 'Q', 0, 'CO2')
     Tk1= Tamb + 5 + ((L_v_co2 + 2*cp_co2_liq)/cp_air)
     k=0
-    while(k<n_iterations and Tk1-Tk>ecart_min):
+    while(k<n_iterations and abs(Tk1-Tk)>ecart_min):
         Tk=Tk1
         cp_air = CP.PropsSI('C', 'T', Tk-5, 'P', p_atm, 'Air')
         cp_co2_liq = CP.PropsSI('CP0MASS', 'T', Tk, 'Q', 0, 'CO2')
         L_v_co2 = CP.PropsSI('L', 'T', Tk, 'Q', 0, 'CO2')
-        Tk1= Tamb + 273.15 + 5 + ((L_v_co2 + 2*cp_co2_liq)/cp_air)
+        Tk1= Tamb + 5 + ((L_v_co2 + 2*cp_co2_liq)/cp_air)
+        k += 1
     p_sat = CP.PropsSI('P', 'T', Tk1, 'Q', 1, 'CO2')
     return Tk1, p_sat
 
-
+ 
 def COP1ter(Tamb):
     Tcond,P3=iteration_T_cond_bis(Tamb,1e-3,1000)
     P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
     P1=P5sv #On néglige la perte de charge dans les échangeurs
-    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
+    h1=CP.PropsSI('H','P',P1,'T',-8+273.15+5,'CO2')
     h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
     h5=h4 #détente isenthalpique
     qf=h1-h5
 
-    s1=CP.PropsSI('S','P',P1,'T',-3+273.15,'CO2')
+    s1=CP.PropsSI('S','P',P1,'T',-8+273.15+5,'CO2')
     P2=P3 #on néglige la perte de charges dans l'échangeur
     s2is=s1
     h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')
@@ -440,14 +445,13 @@ def COP1ter(Tamb):
 
 def COP2bis(P3,Tamb): #Tamb devient une variable
     T3=Tamb+5
-    h1=CP.PropsSI('H','T',-8+273.15,'Q',1,'CO2')
+    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    h1=CP.PropsSI('H','T',-8+273.15+5,'P',P1,'CO2')
+    s1=CP.PropsSI('S','T',-8+273.15+5,'P',P1,'CO2')
     h3=CP.PropsSI('H','T',T3,'P',P3,'CO2')
     h5=h3 #détente isenthalpique
     qf=h1-h5
-
-    P2=P3 #Pas de perte de charges dans le refroidisseur
-    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
-    s1=CP.PropsSI('S','T',-8+273.15,'Q',1,'CO2')
+    P2=P3
     s2is=s1
     h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
     wis=h2is-h1
@@ -461,7 +465,9 @@ def maximiseur_COPbis(Tamb):
     COP_opt = COP2bis(P_opt,Tamb)
 
     while dP > 1e2:
-        P_test = P_opt + dP
+        P_test = P_opt - dP
+        if P_test < 70e5:   #limite basse
+            P_test = 70e5
         COP_test = COP2bis(P_test,Tamb)
         
         if COP_test > COP_opt:
@@ -469,7 +475,7 @@ def maximiseur_COPbis(Tamb):
             COP_opt = COP_test
             
         else:
-            P_test = P_opt - dP
+            P_test = P_opt + dP
             COP_test = COP2bis(P_test,Tamb)
             
             if COP_test > COP_opt:
@@ -488,7 +494,7 @@ def trace_max_COP():
     T20,P20=iteration_T_cond_bis(20+273.15,1e-3,1000)
     COP=[COP1ter(10+273.15),COP1ter(20+273.15),COP2bis(P30,30+273.15),COP2bis(P40,40+273.15)]
 
-    plt.plot(Tamb,COP,marker='o')
+    plt.plot(Tamb,COP,marker='o', label='COP max')
     plt.xlabel('Tamb (°C)', fontsize=12)
     plt.ylabel('COP maximale', fontsize=12)
     plt.title('COP maximale en fonction de la température ambiante', fontsize=14)
@@ -497,7 +503,7 @@ def trace_max_COP():
     plt.show()
 
     P_bar=np.array([P10,P20,P30,P40])*1e-5
-    plt.plot(Tamb,P_bar,marker='o')
+    plt.plot(Tamb,P_bar,marker='o', label='P3 optimale')
     for i, (T, P) in enumerate(zip(Tamb, P_bar)):
         plt.text(T, P, f'{P:.1f} bar', fontsize=10, ha='left', va='bottom', color='red')
     plt.xlabel('Tamb (°C)', fontsize=12)
@@ -517,11 +523,17 @@ print("P40 =",P40*1e-5,'bar')
 
 # +
 #Q4.1
+
+def COP_propane(Tevap, Tcond):
+    COP_carnot = Tevap / (Tcond - Tevap)
+    return 0.2 * COP_carnot
+
 def COP4_souscritique(P3,SC):
     Tcond=CP.PropsSI('T','P',P3,'Q',1,'CO2')
     P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
     P1=P5sv #On néglige la perte de charge dans les échangeurs
-    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
+    T1 = -8+273.15+5
+    h1 = CP.PropsSI('H','T',T1,'P',P1,'CO2')
     h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
     P4=P3 #On néglige la perte de charge dans les échangeurs
     P4sc=P4 #On néglige la perte de charge dans les échangeurs
@@ -530,7 +542,7 @@ def COP4_souscritique(P3,SC):
     h5=h4sc #détente isenthalpique
     qf=h1-h5
 
-    s1=CP.PropsSI('S','P',P1,'T',-3+273.15,'CO2')
+    s1 = CP.PropsSI('S','T',T1,'P',P1,'CO2')
     P2=P3 #on néglige la perte de charges dans l'échangeur
     s2is=s1
     h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')
@@ -538,97 +550,90 @@ def COP4_souscritique(P3,SC):
     tau=P2/P1
     eta_is=0.3774+0.14*tau-0.02*tau**2+0.001*tau**3
     w=wis/eta_is
-    return qf/w
+
+    # DMSS
+    h3=CP.PropsSI('H','T',Tcond,'Q',0,'CO2')
+    Q_DMSS=h3-h4sc
+    Tevap_prop=T4sc-5
+    Tcond_prop=Tcond
+    COP_prop=COP_propane(Tevap_prop,Tcond_prop)
+    w_DMSS=Q_DMSS/COP_prop
+    
+    return qf/(w+w_DMSS)
 
 def COP4_transcritique(P3,Tamb,SC):
     T3=Tamb+5
-    P4=P3 #Pas de perte de charge dans les échangeurs
+    P4=P3
     T4=T3-SC
-    h4=CP.PropsSI('H','P',P4,'T',T4,'CO2')
-    h5=h4 #détente isenthalpique
-    h1=CP.PropsSI('H','T',-8+273.15,'Q',1,'CO2')
+    h4=CP.PropsSI('H','T',T4,'P',P4,'CO2')
+    h5=h4
+    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    T1=-8+273.15+5
+    h1=CP.PropsSI('H','T',T1,'P',P1,'CO2')
     qf=h1-h5
 
-    P2=P3 #Pas de perte de charges dans le refroidisseur
-    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
-    s1=CP.PropsSI('S','T',-8+273.15,'Q',1,'CO2')
+    s1=CP.PropsSI('S','T',T1,'P',P1,'CO2')
+    P2=P3
     s2is=s1
-    h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
+    h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')
     wis=h2is-h1
     tau=P2/P1
     eta_is=0.3774+0.14*tau-0.02*tau**2+0.001*tau**3
     w=wis/eta_is
-    return qf/w
+
+    # DMSS
+    h3=CP.PropsSI('H','T',T3,'P',P3,'CO2')
+    Q_DMSS=h3-h4
+    Tevap_prop=T4-5
+    Tcond_prop=Tamb+5    
+    COP_prop=COP_propane(Tevap_prop,Tcond_prop)
+    w_DMSS=Q_DMSS/COP_prop
+    
+    return qf/(w+w_DMSS)
 
 print(COP4_transcritique(120e5,30+273.15,8))
 print(COP2bis(120e5,30+273.15))
-# -
-
-
-
 # +
 #Q4.2
 def trace4_transcritique(Tamb):
-    P3=np.linspace(5e5,1e8,10000)
-    COP_avecSC_transcritique=COP4_transcritique(P3,Tamb,5)
-    COP_sansSC_transcritique=COP2bis(P3,Tamb)
+    P3 = np.linspace(70e5, 140e5, 200)
+    
+    COP_avecSC_transcritique = [COP4_transcritique(p, Tamb, 5) for p in P3]
+    COP_sansSC_transcritique = [COP2bis(p, Tamb) for p in P3]
 
-    plt.ylim(-50,50)
-    plt.xscale('log')
-    plt.plot(P3,COP_avecSC_transcritique,label='COP avec DMSS')
-    plt.plot(P3,COP_sansSC_transcritique,label='COP sans DMSS')
-    plt.xlabel('P (Pa)', fontsize=12)
+    plt.plot(P3*1e-5, COP_avecSC_transcritique, label='COP avec DMSS')
+    plt.plot(P3*1e-5, COP_sansSC_transcritique, label='COP sans DMSS')
+
+    plt.xlabel('P (bar)', fontsize=12)
     plt.ylabel('COP', fontsize=12)
-    plt.title('COP en fonction de la pression avec et sans DMSS en régime transcritique', fontsize=14)
+    plt.title('Influence de la pression de refoulement sur le COP (régime transcritique)', fontsize=14)
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3)
     plt.show()
 
 def trace4_souscritique(Tamb):
-    P3=np.linspace(6e5,7e6,10000)
-    COP_avecSC_souscritique=COP4_souscritique(P3,5)
-    COP_sansSC_souscritique=COP1bis(P3)
+    P3 = np.linspace(45e5, 70e5, 200)
 
-    plt.ylim(-50,50)
-    plt.xscale('log')
-    plt.plot(P3,COP_avecSC_souscritique,label='COP avec DMSS')
-    plt.plot(P3,COP_sansSC_souscritique,label='COP sans DMSS')
-    plt.xlabel('P (Pa)', fontsize=12)
+    COP_avecSC_souscritique = [COP4_souscritique(p, 5) for p in P3]
+    COP_sansSC_souscritique = [COP1bis(p) for p in P3]
+
+    plt.plot(P3*1e-5, COP_avecSC_souscritique, label='COP avec DMSS')
+    plt.plot(P3*1e-5, COP_sansSC_souscritique, label='COP sans DMSS')
+
+    plt.xlabel('P (bar)', fontsize=12)
     plt.ylabel('COP', fontsize=12)
-    plt.title('COP en fonction de la pression avec et sans DMSS en régime sous-critique', fontsize=14)
+    plt.title('Influence de la pression de refoulement sur le COP (régime sous-critique)', fontsize=14)
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3)
     plt.show()
 
-trace4_transcritique(30+327.15)
-trace4_souscritique(20+327.15)
+trace4_transcritique(30+273.15)
+trace4_souscritique(20+273.15)
 
 
 # -
-#Q4.3
-def COP4_souscritique_bis(Tamb,SC):
-    Tcond,P3=iteration_T_cond_bis(Tamb,1e-3,1000)
-    P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
-    P1=P5sv #On néglige la perte de charge dans les échangeurs
-    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
-    P4=P3 #On néglige la perte de charge dans les échangeurs
-    h4=CP.PropsSI('H','T',Tcond-2,'P',P4,'CO2')
-    P4sc=P4 #On néglige la perte de charge dans les échangeurs
-    T4sc=Tcond-2-SC
-    h4sc=CP.PropsSI('H','T',T4sc,'P',P4sc,'CO2')
-    h5=h4sc #détente isenthalpique
-    qf=h1-h5
 
-    s1=CP.PropsSI('S','P',P1,'T',-3+273.15,'CO2')
-    P2=P3 #on néglige la perte de charges dans l'échangeur
-    s2is=s1
-    h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')
-    wis=h2is-h1
-    tau=P2/P1
-    eta_is=0.3774+0.14*tau-0.02*tau**2+0.001*tau**3
-    w=wis/eta_is
-    return qf/w
-# +
+#Q4.3
 import time
 
 def find_optimal_couple_souscritique(Tamb, SC_range=(0, 20, 50)):
@@ -643,29 +648,26 @@ def find_optimal_couple_souscritique(Tamb, SC_range=(0, 20, 50)):
         SC_values = np.linspace(SC_min, SC_max, n_SC)
         dSC=(SC_max-SC_min)/n_SC
         for SC in SC_values:
-            current_COP = COP4_souscritique_bis(Tamb,SC)
+            current_COP = COP4_souscritique(best_P3, SC)
             if current_COP > best_COP:
                 best_COP = current_COP
                 best_SC = SC
                 
-        SC_min,SC_max=SC-dSC,SC+dSC
+        SC_min, SC_max = best_SC - dSC, best_SC + dSC
 
     # Temps écoulé
     time_elapsed = time.time() - start_time
 
     return best_P3, best_SC, time_elapsed
-
-
-# -
-def find_optimal_couple_transcritique(Tamb, P3_range=(10e5, 70e5, 50), SC_range=(0, 20, 50)):
+def find_optimal_couple_transcritique(Tamb, P3_range=(4.5e6,12e6, 50), SC_range=(0, 20, 50)):
     start_time = time.time()
 
     P3_min, P3_max, n_P3 = P3_range
     SC_min, SC_max, n_SC = SC_range
 
     best_COP = -np.inf
-    best_P3 = None
-    best_SC = None
+    best_P3 = 0
+    best_SC = 0
 
     for i in range(5):
         P3_values = np.linspace(P3_min, P3_max, n_P3)
@@ -679,8 +681,8 @@ def find_optimal_couple_transcritique(Tamb, P3_range=(10e5, 70e5, 50), SC_range=
                     best_COP = current_COP
                     best_P3 = P3
                     best_SC = SC
-        P3_min, P3_max = P3-dP3,P3+dP3
-        SC_min,SC_max=SC-dSC,SC+dSC
+        P3_min, P3_max = best_P3-dP3,best_P3+dP3
+        SC_min,SC_max=best_SC-dSC,best_SC+dSC
         
     # Temps écoulé
     time_elapsed = time.time() - start_time
@@ -690,41 +692,83 @@ def find_optimal_couple_transcritique(Tamb, P3_range=(10e5, 70e5, 50), SC_range=
 
 print(find_optimal_couple_souscritique(283.15, SC_range=(0, 15, 50)))
 print(find_optimal_couple_souscritique(293.15, SC_range=(0, 15, 50)))
-print(find_optimal_couple_transcritique(303.15, P3_range=(10e5, 70e5, 50), SC_range=(0, 15, 50)))
-print(find_optimal_couple_transcritique(313.15, P3_range=(10e5, 70e5, 50), SC_range=(0, 15, 50)))
+print(find_optimal_couple_transcritique(303.15, P3_range=(4.5e6,12e6, 50), SC_range=(0, 15, 50)))
+print(find_optimal_couple_transcritique(313.15, P3_range=(4.5e6,12e6, 50), SC_range=(0, 15, 50)))
 
 
 # +
 #Q5
-def calcul_qf_souscritique_avec_DMSS(Tamb, SC_range=(0, 20, 50)):
-    P3,SC,t=find_optimal_couple_transcritique(Tamb, P3_range=(10e5, 70e5, 50), SC_range=(0, 20, 50))
+def qf_souscritique_avec_DMSS(P3,SC):
     Tcond=CP.PropsSI('T','P',P3,'Q',1,'CO2')
     P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
     P1=P5sv #On néglige la perte de charge dans les échangeurs
     h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
+    h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
     P4=P3 #On néglige la perte de charge dans les échangeurs
-    h4=CP.PropsSI('H','T',Tcond-2,'P',P4,'CO2')
     P4sc=P4 #On néglige la perte de charge dans les échangeurs
     T4sc=Tcond-2-SC
     h4sc=CP.PropsSI('H','T',T4sc,'P',P4sc,'CO2')
     h5=h4sc #détente isenthalpique
     qf=h1-h5
     return qf
-
-def calcul_qf_souscritique_sans_DMSS(Tamb):
+    
+def qf_souscritique_sans_DMSS(Tamb):
     Tcond,P3=iteration_T_cond_bis(Tamb,1e-3,1000)
     P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
     P1=P5sv #On néglige la perte de charge dans les échangeurs
-    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
+    h1=CP.PropsSI('H','P',P1,'T',-8+273.15+5,'CO2')
     h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
     h5=h4 #détente isenthalpique
     qf=h1-h5
     return qf
 
-print(calcul_qf_souscritique_avec_DMSS(283.15, SC_range=(0, 20, 50)))
-print(calcul_qf_souscritique_avec_DMSS(293.15, SC_range=(0, 20, 50)))
-print(calcul_qf_souscritique_sans_DMSS(283.15))
-print(calcul_qf_souscritique_sans_DMSS(293.15))
+
+P3_10,SC_10,t10=find_optimal_couple_souscritique(283.15, SC_range=(0, 20, 50))
+P3_20,SC_20,t20=find_optimal_couple_souscritique(293.15, SC_range=(0, 20, 50))
+print(qf_souscritique_avec_DMSS(P3_10,SC_10))
+print(qf_souscritique_avec_DMSS(P3_20,SC_20))
+print(qf_souscritique_sans_DMSS(283.15))
+print(qf_souscritique_sans_DMSS(293.15))
+# +
+def qf_transcritique_avec_DMSS(Tamb,P3,SC):
+    T3=Tamb+5
+    P4=P3
+    T4=T3-SC
+    h4=CP.PropsSI('H','T',T4,'P',P4,'CO2')
+    h5=h4
+    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    T1=-8+273.15+5
+    h1=CP.PropsSI('H','T',T1,'P',P1,'CO2')
+    qf=h1-h5
+    return qf
+    
+def qf_transcritique_sans_DMSS(Tamb):
+    T3=Tamb+5
+    P3=maximiseur_COPbis(T3)
+    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    h1=CP.PropsSI('H','T',-8+273.15+5,'P',P1,'CO2')
+    s1=CP.PropsSI('S','T',-8+273.15+5,'P',P1,'CO2')
+    h3=CP.PropsSI('H','T',T3,'P',P3,'CO2')
+    h5=h3 #détente isenthalpique
+    qf=h1-h5
+    return qf
+
+
+P3_30,SC_30,t10=find_optimal_couple_transcritique(303.15,P3_range=(4.5e6,12e6,50),SC_range=(0, 20, 50))
+P3_40,SC_40,t20=find_optimal_couple_transcritique(313.15,P3_range=(4.5e6,12e6,50),SC_range=(0, 20, 50))
+print(qf_transcritique_avec_DMSS(303.15,P3_30,SC_30))
+print(qf_transcritique_avec_DMSS(313.15,P3_40,SC_40))
+print(qf_transcritique_sans_DMSS(303.15))
+print(qf_transcritique_sans_DMSS(313.15))
 # -
+#Pressions optimales avec DMSS
+print(P3_10,P3_20,P3_30,P3_40)
+
+#Pressions optimales sans DMSS
+Tcond10,P3_10=iteration_T_cond_bis(283.15,1e-3,1000)
+Tcond20,P3_20=iteration_T_cond_bis(293.15,1e-3,1000)
+P_30=maximiseur_COPbis(303.15)
+P_40=maximiseur_COPbis(313.15)
+print(P3_10,P3_20,P3_30,P3_40)
 
 

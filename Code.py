@@ -523,11 +523,17 @@ print("P40 =",P40*1e-5,'bar')
 
 # +
 #Q4.1
+
+def COP_propane(Tevap, Tcond):
+    COP_carnot = Tevap / (Tcond - Tevap)
+    return 0.2 * COP_carnot
+
 def COP4_souscritique(P3,SC):
     Tcond=CP.PropsSI('T','P',P3,'Q',1,'CO2')
     P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
     P1=P5sv #On néglige la perte de charge dans les échangeurs
-    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
+    T1 = -8+273.15+5
+    h1 = CP.PropsSI('H','T',T1,'P',P1,'CO2')
     h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
     P4=P3 #On néglige la perte de charge dans les échangeurs
     P4sc=P4 #On néglige la perte de charge dans les échangeurs
@@ -536,7 +542,7 @@ def COP4_souscritique(P3,SC):
     h5=h4sc #détente isenthalpique
     qf=h1-h5
 
-    s1=CP.PropsSI('S','P',P1,'T',-3+273.15,'CO2')
+    s1 = CP.PropsSI('S','T',T1,'P',P1,'CO2')
     P2=P3 #on néglige la perte de charges dans l'échangeur
     s2is=s1
     h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')
@@ -544,27 +550,46 @@ def COP4_souscritique(P3,SC):
     tau=P2/P1
     eta_is=0.3774+0.14*tau-0.02*tau**2+0.001*tau**3
     w=wis/eta_is
-    return qf/w
+
+    # DMSS
+    h3=CP.PropsSI('H','T',Tcond,'Q',0,'CO2')
+    Q_DMSS=h3-h4sc
+    Tevap_prop=T4sc-5
+    Tcond_prop=Tcond
+    COP_prop=COP_propane(Tevap_prop,Tcond_prop)
+    w_DMSS=Q_DMSS/COP_prop
+    
+    return qf/(w+w_DMSS)
 
 def COP4_transcritique(P3,Tamb,SC):
     T3=Tamb+5
-    P4=P3 #Pas de perte de charge dans les échangeurs
+    P4=P3
     T4=T3-SC
-    h4=CP.PropsSI('H','P',P4,'T',T4,'CO2')
-    h5=h4 #détente isenthalpique
-    h1=CP.PropsSI('H','T',-8+273.15,'Q',1,'CO2')
+    h4=CP.PropsSI('H','T',T4,'P',P4,'CO2')
+    h5=h4
+    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
+    T1=-8+273.15+5
+    h1=CP.PropsSI('H','T',T1,'P',P1,'CO2')
     qf=h1-h5
 
-    P2=P3 #Pas de perte de charges dans le refroidisseur
-    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
-    s1=CP.PropsSI('S','T',-8+273.15,'Q',1,'CO2')
+    s1=CP.PropsSI('S','T',T1,'P',P1,'CO2')
+    P2=P3
     s2is=s1
-    h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
+    h2is=CP.PropsSI('H','S',s2is,'P',P2,'CO2')
     wis=h2is-h1
     tau=P2/P1
     eta_is=0.3774+0.14*tau-0.02*tau**2+0.001*tau**3
     w=wis/eta_is
-    return qf/w
+
+    # DMSS
+    h3=CP.PropsSI('H','T',T3,'P',P3,'CO2')
+    Q_DMSS=h3-h4
+    Tevap_prop=T4-5
+    Tcond_prop=Tamb+5    
+    COP_prop=COP_propane(Tevap_prop,Tcond_prop)
+    w_DMSS=Q_DMSS/COP_prop
+    
+    return qf/(w+w_DMSS)
 
 print(COP4_transcritique(120e5,30+273.15,8))
 print(COP2bis(120e5,30+273.15))
@@ -575,39 +600,39 @@ print(COP2bis(120e5,30+273.15))
 # +
 #Q4.2
 def trace4_transcritique(Tamb):
-    P3=np.linspace(5e5,1e8,10000)
-    COP_avecSC_transcritique=COP4_transcritique(P3,Tamb,5)
-    COP_sansSC_transcritique=COP2bis(P3,Tamb)
+    P3 = np.linspace(70e5, 140e5, 200)
+    
+    COP_avecSC_transcritique = [COP4_transcritique(p, Tamb, 5) for p in P3]
+    COP_sansSC_transcritique = [COP2bis(p, Tamb) for p in P3]
 
-    plt.ylim(-50,50)
-    plt.xscale('log')
-    plt.plot(P3,COP_avecSC_transcritique,label='COP avec DMSS')
-    plt.plot(P3,COP_sansSC_transcritique,label='COP sans DMSS')
-    plt.xlabel('P (Pa)', fontsize=12)
+    plt.plot(P3*1e-5, COP_avecSC_transcritique, label='COP avec DMSS')
+    plt.plot(P3*1e-5, COP_sansSC_transcritique, label='COP sans DMSS')
+
+    plt.xlabel('P (bar)', fontsize=12)
     plt.ylabel('COP', fontsize=12)
-    plt.title('COP en fonction de la pression avec et sans DMSS en régime transcritique', fontsize=14)
+    plt.title('Influence de la pression de refoulement sur le COP (régime transcritique)', fontsize=14)
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3)
     plt.show()
 
 def trace4_souscritique(Tamb):
-    P3=np.linspace(6e5,7e6,10000)
-    COP_avecSC_souscritique=COP4_souscritique(P3,5)
-    COP_sansSC_souscritique=COP1bis(P3)
+    P3 = np.linspace(45e5, 70e5, 200)
 
-    plt.ylim(-50,50)
-    plt.xscale('log')
-    plt.plot(P3,COP_avecSC_souscritique,label='COP avec DMSS')
-    plt.plot(P3,COP_sansSC_souscritique,label='COP sans DMSS')
-    plt.xlabel('P (Pa)', fontsize=12)
+    COP_avecSC_souscritique = [COP4_souscritique(p, 5) for p in P3]
+    COP_sansSC_souscritique = [COP1bis(p) for p in P3]
+
+    plt.plot(P3*1e-5, COP_avecSC_souscritique, label='COP avec DMSS')
+    plt.plot(P3*1e-5, COP_sansSC_souscritique, label='COP sans DMSS')
+
+    plt.xlabel('P (bar)', fontsize=12)
     plt.ylabel('COP', fontsize=12)
-    plt.title('COP en fonction de la pression avec et sans DMSS en régime sous-critique', fontsize=14)
+    plt.title('Influence de la pression de refoulement sur le COP (régime sous-critique)', fontsize=14)
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3)
     plt.show()
 
-trace4_transcritique(30+327.15)
-trace4_souscritique(20+327.15)
+trace4_transcritique(30+273.15)
+trace4_souscritique(20+273.15)
 
 
 # -

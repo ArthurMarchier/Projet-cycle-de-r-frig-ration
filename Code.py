@@ -222,7 +222,7 @@ def COP2(P3):
     h2is=CP.PropsSI('H','P',P2,'S',s2is,'CO2')
     wis=h2is-h1
     w=wis/(1-0.121*(P2/P1))
-    return qf/w
+    return qf/w 
     
 print(COP2(120e5))
 
@@ -728,7 +728,7 @@ print(find_optimal_couple_transcritique(313.15, P3_range=(10e5, 70e5, 50), SC_ra
 # +
 #Q5
 def calcul_qf_souscritique_avec_DMSS(Tamb, SC_range=(0, 20, 50)):
-    P3,SC,t=find_optimal_couple_transcritique(Tamb, P3_range=(10e5, 70e5, 50), SC_range=(0, 20, 50))
+    P3,SC,t=find_optimal_couple_souscritique(Tamb, P3_range=(10e5, 70e5, 50), SC_range=(0, 20, 50))
     Tcond=CP.PropsSI('T','P',P3,'Q',1,'CO2')
     P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
     P1=P5sv #On néglige la perte de charge dans les échangeurs

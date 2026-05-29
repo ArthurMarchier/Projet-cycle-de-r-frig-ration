@@ -636,7 +636,8 @@ trace4_souscritique(20+273.15)
 #Q4.3
 import time
 
-def find_optimal_couple_souscritique(Tamb, SC_range=(0, 20, 50)):
+# +
+def find_optimal_couple_souscritique_DMSS(Tamb, SC_range=(0, 20, 50)):
     start_time = time.time()
     T_cond,best_P3=iteration_T_cond_bis(Tamb,1e-3,1000)
     SC_min, SC_max, n_SC = SC_range
@@ -659,7 +660,9 @@ def find_optimal_couple_souscritique(Tamb, SC_range=(0, 20, 50)):
     time_elapsed = time.time() - start_time
 
     return best_P3, best_SC, time_elapsed
-def find_optimal_couple_transcritique(Tamb, P3_range=(4.5e6,12e6, 50), SC_range=(0, 20, 50)):
+
+
+def find_optimal_couple_transcritique_DMSS(Tamb, P3_range=(4.5e6,12e6, 50), SC_range=(0, 20, 50)):
     start_time = time.time()
 
     P3_min, P3_max, n_P3 = P3_range
@@ -690,85 +693,63 @@ def find_optimal_couple_transcritique(Tamb, P3_range=(4.5e6,12e6, 50), SC_range=
     return best_P3, best_SC, time_elapsed
 
 
-print(find_optimal_couple_souscritique(283.15, SC_range=(0, 15, 50)))
-print(find_optimal_couple_souscritique(293.15, SC_range=(0, 15, 50)))
-print(find_optimal_couple_transcritique(303.15, P3_range=(4.5e6,12e6, 50), SC_range=(0, 15, 50)))
-print(find_optimal_couple_transcritique(313.15, P3_range=(4.5e6,12e6, 50), SC_range=(0, 15, 50)))
+# -
+
+print(find_optimal_couple_souscritique_DMSS(283.15, SC_range=(0, 15, 50)))
+print(find_optimal_couple_souscritique_DMSS(293.15, SC_range=(0, 15, 50)))
+print(find_optimal_couple_transcritique_DMSS(303.15, P3_range=(4.5e6,12e6, 50), SC_range=(0, 15, 50)))
+print(find_optimal_couple_transcritique_DMSS(313.15, P3_range=(4.5e6,12e6, 50), SC_range=(0, 15, 50)))
 
 
 # +
 #Q5
-def qf_souscritique_avec_DMSS(P3,SC):
-    Tcond=CP.PropsSI('T','P',P3,'Q',1,'CO2')
-    P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
-    P1=P5sv #On néglige la perte de charge dans les échangeurs
-    h1=CP.PropsSI('H','P',P1,'T',-3+273.15,'CO2')
-    h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
-    P4=P3 #On néglige la perte de charge dans les échangeurs
-    P4sc=P4 #On néglige la perte de charge dans les échangeurs
-    T4sc=Tcond-2-SC
-    h4sc=CP.PropsSI('H','T',T4sc,'P',P4sc,'CO2')
-    h5=h4sc #détente isenthalpique
-    qf=h1-h5
-    return qf
-    
-def qf_souscritique_sans_DMSS(Tamb):
-    Tcond,P3=iteration_T_cond_bis(Tamb,1e-3,1000)
-    P5sv=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
-    P1=P5sv #On néglige la perte de charge dans les échangeurs
-    h1=CP.PropsSI('H','P',P1,'T',-8+273.15+5,'CO2')
-    h4=CP.PropsSI('H','T',Tcond-2,'Q',0,'CO2')
-    h5=h4 #détente isenthalpique
-    qf=h1-h5
-    return qf
+
+def find_optimal_souscritique_sans_DMSS(Tamb):
+    Tcond, P3 = iteration_T_cond_bis(Tamb, 1e-3, 1000)
+    return P3
+
+def find_optimal_transcritique_sans_DMSS(Tamb, P3_range=(4.5e6,12e6,50)):
+
+    P3_min, P3_max, n_P3 = P3_range
+    P3_values = np.linspace(P3_min, P3_max, n_P3)
+
+    best_COP = -np.inf
+    best_P3 = 0
+
+    for P3 in P3_values:
+        current_COP = COP2bis(P3, Tamb)
+        if current_COP > best_COP:
+            best_COP = current_COP
+            best_P3 = P3
+
+    return best_P3
 
 
-P3_10,SC_10,t10=find_optimal_couple_souscritique(283.15, SC_range=(0, 20, 50))
-P3_20,SC_20,t20=find_optimal_couple_souscritique(293.15, SC_range=(0, 20, 50))
-print(qf_souscritique_avec_DMSS(P3_10,SC_10))
-print(qf_souscritique_avec_DMSS(P3_20,SC_20))
-print(qf_souscritique_sans_DMSS(283.15))
-print(qf_souscritique_sans_DMSS(293.15))
 # +
-def qf_transcritique_avec_DMSS(Tamb,P3,SC):
-    T3=Tamb+5
-    P4=P3
-    T4=T3-SC
-    h4=CP.PropsSI('H','T',T4,'P',P4,'CO2')
-    h5=h4
-    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
-    T1=-8+273.15+5
-    h1=CP.PropsSI('H','T',T1,'P',P1,'CO2')
-    qf=h1-h5
-    return qf
-    
-def qf_transcritique_sans_DMSS(Tamb):
-    T3=Tamb+5
-    P3=maximiseur_COPbis(T3)
-    P1=CP.PropsSI('P','T',-8+273.15,'Q',1,'CO2')
-    h1=CP.PropsSI('H','T',-8+273.15+5,'P',P1,'CO2')
-    s1=CP.PropsSI('S','T',-8+273.15+5,'P',P1,'CO2')
-    h3=CP.PropsSI('H','T',T3,'P',P3,'CO2')
-    h5=h3 #détente isenthalpique
-    qf=h1-h5
-    return qf
+Tamb_values = [283.15, 293.15, 303.15, 313.15]
 
+for Tamb in Tamb_values:
 
-P3_30,SC_30,t10=find_optimal_couple_transcritique(303.15,P3_range=(4.5e6,12e6,50),SC_range=(0, 20, 50))
-P3_40,SC_40,t20=find_optimal_couple_transcritique(313.15,P3_range=(4.5e6,12e6,50),SC_range=(0, 20, 50))
-print(qf_transcritique_avec_DMSS(303.15,P3_30,SC_30))
-print(qf_transcritique_avec_DMSS(313.15,P3_40,SC_40))
-print(qf_transcritique_sans_DMSS(303.15))
-print(qf_transcritique_sans_DMSS(313.15))
+    print("===== Tamb =", Tamb, "K =====")
+
+    # ----- AVEC DMSS -----
+    if Tamb < 303.15:
+        P3_DMSS, SC_DMSS, _ = find_optimal_couple_souscritique_DMSS(Tamb)
+        COP_DMSS = COP4_souscritique(P3_DMSS, SC_DMSS)
+
+        P3_sans = find_optimal_souscritique_sans_DMSS(Tamb)
+        COP_sans = COP1bis(P3_sans)
+
+    else:
+        P3_DMSS, SC_DMSS, _ = find_optimal_couple_transcritique_DMSS(Tamb)
+        COP_DMSS = COP4_transcritique(P3_DMSS, Tamb, SC_DMSS)
+
+        P3_sans = find_optimal_transcritique_sans_DMSS(Tamb)
+        COP_sans = COP2bis(P3_sans, Tamb)
+
+    print("Avec DMSS :", round(P3_DMSS*1e-5,2), "bar | COP =", round(COP_DMSS,3))
+    print("Sans DMSS :", round(P3_sans*1e-5,2), "bar | COP =", round(COP_sans,3))
+    print()
 # -
-#Pressions optimales avec DMSS
-print(P3_10,P3_20,P3_30,P3_40)
-
-#Pressions optimales sans DMSS
-Tcond10,P3_10=iteration_T_cond_bis(283.15,1e-3,1000)
-Tcond20,P3_20=iteration_T_cond_bis(293.15,1e-3,1000)
-P_30=maximiseur_COPbis(303.15)
-P_40=maximiseur_COPbis(313.15)
-print(P3_10,P3_20,P3_30,P3_40)
 
 
